@@ -12,7 +12,7 @@
     Netbox REST API token
 
 .NOTES
-    Version:        1.1
+    Version:        1.2
     Author:         Joe Wegner <joe at jwegner dot io>
     Creation Date:  2018-02-08
     Purpose/Change: Initial script development
