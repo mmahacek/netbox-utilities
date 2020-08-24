@@ -423,9 +423,8 @@ function Sync-Netbox {
                         # IP assigned in Netbox but not configured in vCenter, so set to "deprecated"
                         $Date = Get-Date -Format d
                         $Description = [String]::Format("{0} - inactive {1}", $NetboxVM.Name, $Date)
-                        # IP address status 3 = deprecated
                         $IPPatch = @{
-                            "status" = 3
+                            "status" = "deprecated"
                             "description" = $Description
                         }
                         $IPPatchJSON = ConvertTo-JSON $IPPatch
@@ -451,11 +450,10 @@ function Sync-Netbox {
                                 $NetboxIP = $Response.results
                                 # create details for patching IP in Netbox
                                 $Description = $NetboxVM.Name
-                                # Status ID 1 = "Active"
                                 $IPPatch = @{
-                                    "status" = 1
+                                    "status" = "active"
                                     "description" = $Description
-                                    "interface" = $InterfaceID
+                                    "vminterface" = $InterfaceID
                                 }
                                 $IPPatchJSON = ConvertTo-JSON $IPPatch
                                 $URI = $URIBase + $IPAddressesPath + "/" + $NetboxIP.id + "/"
@@ -465,12 +463,11 @@ function Sync-Netbox {
                             } else {
                                 # IP does not exist in Netbox, so we need to create it
                                 $Description = $NetboxVM.Name
-                                # Status ID 1 = "Active"
                                 $IPPost = @{
                                     "address" = $vCenterIP
-                                    "status" = 1
+                                    "status" = "active"
                                     "description" = $Description
-                                    "interface" = $InterfaceID
+                                    "vminterface" = $InterfaceID
                                 }
                                 $IPPostJSON = ConvertTo-JSON $IPPost
                                 $URI = $URIBase + $IPAddressesPath + "/"
@@ -479,21 +476,21 @@ function Sync-Netbox {
                                 $AssignedIPs += $Response.address
                             }
                         } else {
-                            # IP exists in Netbox, make sure status is "Active" (ID = 1) and that the interface is correct
+                            # IP exists in Netbox, make sure status is "Active" and that the interface is correct
                             # Search through Netbox IPs to find corresponding IP
                             foreach ($NetboxIP in $NetboxIPs) {
                                 if ($vCenterIP -eq $NetboxIP.address) {
                                     # we've found the corresponding entry so determine what data needs to be updated
                                     $IPPatch = @{}
                                     # check that the IP is on the correct interface
-                                    if ($NetboxIP.interface -ne $InterfaceID) { $IPPatch["interface"] = $InterfaceID }
+                                    if ($NetboxIP.interface -ne $InterfaceID) { $IPPatch["vminterface"] = $InterfaceID }
                                     # check that the status is active
-                                    if ($NetboxIP.status -ne 1) { $IPPatch["status"] = 1 }
+                                    if ($NetboxIP.status -ne "active") { $IPPatch["status"] = "active" }
                                     # check that the description contains the hostname
                                     $VMShortName = $NetboxVM.Name.Split('.')[0]
                                     $DescriptionMatch = $NetboxIP.description -match $VMShortName
                                     if (-not $DescriptionMatch) {
-                                        $IPPatch["status"] = 1
+                                        $IPPatch["status"] = "active"
                                     }
                                     # Only submit patches if anything has changed
                                     if ($IPPatch.count -gt 0) {
